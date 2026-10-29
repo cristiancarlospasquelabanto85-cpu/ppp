@@ -1,0 +1,12 @@
+<!DOCTYPE html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>URBANFLOW — App del repartidor</title>
+<style>body{margin:0;background:#0a1628;color:#e6eefc;font:16px system-ui;padding:20px}h1{font-size:20px}button,select{font-size:16px;padding:12px;margin:6px 0;width:100%;border-radius:10px;border:1px solid #2a4a7a;background:#1a3055;color:#fff}#go{background:#22d3ee;color:#041;border:0}pre{background:#12233f;padding:10px;border-radius:8px;overflow:auto}</style></head><body>
+<h1>📱 URBANFLOW — Repartidor</h1><label>Soy:<select id="who"></select></label><button id="go">Compartir mi ubicación GPS</button><button id="stop">Detener</button><p id="st">Pulsa el botón; el navegador pedirá permiso de ubicación.</p><pre id="last"></pre>
+<script src="js/config.js"></script><script src="js/live.js"></script><script src="js/data.js"></script><script>
+const $=s=>document.querySelector(s),st=t=>$('#st').textContent=t;let wid=null,lastSent=0;
+$('#who').innerHTML=COURIERS.map(c=>`<option value="${c.id}">${c.icon} ${c.name} (${c.id})</option>`).join('');
+$('#go').onclick=()=>{if(!navigator.geolocation)return st('Este dispositivo no soporta geolocalización.');if(!isSecureContext)return st('El GPS requiere HTTPS (o localhost).');
+ wid=navigator.geolocation.watchPosition(async p=>{const now=Date.now();if(now-lastSent<3000)return;lastSent=now;const pos={id:$('#who').value,lat:p.coords.latitude,lng:p.coords.longitude,acc:Math.round(p.coords.accuracy),speed:p.coords.speed,t:now};
+  try{await Live.publish(pos.id,pos);st('Compartiendo ubicación ✔ '+new Date(now).toLocaleTimeString());$('#last').textContent=JSON.stringify(pos,null,1)}catch(e){st('No se pudo enviar: '+e.message)}},
+  e=>st(e.code===1?'Permiso de ubicación DENEGADO. Actívalo en los ajustes del navegador/teléfono.':'Error de GPS: '+e.message),{enableHighAccuracy:true,maximumAge:2000,timeout:20000})};
+$('#stop').onclick=()=>{if(wid!==null)navigator.geolocation.clearWatch(wid);wid=null;Live.publish($('#who').value,{id:$('#who').value,off:true,t:Date.now()}).catch(()=>{});st('Ubicación detenida.')};
+</script></body></html>
